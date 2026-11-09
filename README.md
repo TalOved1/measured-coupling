@@ -1,7 +1,7 @@
 # Measured Coupling for Parallel Decoding in Diffusion Language Models
 
 Official implementation of the paper **Measured Coupling for Parallel Decoding in Diffusion Language Models**
-by Tal Oved and Lior Wolf (Tel Aviv University).
+by Tal Oved and Lior Wolf (Tel Aviv University). Paper: [arXiv:2611.08307](https://arxiv.org/abs/2611.08307).
 
 Measured coupling replaces the similarity penalty of mean-field parallel decoding with the
 measured effect of committing one token on another's confidence, using cheap probes that run inside the model's
@@ -81,10 +81,19 @@ The harness builds on the [DAWN](https://github.com/lizhuo-luo/DAWN) code base. 
 
 ## Citation
 
+If you use this code, please cite the paper:
+
 ```bibtex
 @article{oved2026measured,
-  title  = {Measured Coupling for Parallel Decoding in Diffusion Language Models},
-  author = {Oved, Tal and Wolf, Lior},
-  year   = {2026}
+  title         = {Measured Coupling for Parallel Decoding in Diffusion Language Models},
+  author        = {Oved, Tal and Wolf, Lior},
+  journal       = {arXiv preprint arXiv:2611.08307},
+  year          = {2026},
+  eprint        = {2611.08307},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
+  url           = {https://arxiv.org/abs/2611.08307}
 }
 ```
+
+GitHub's "Cite this repository" button (from `CITATION.cff`) gives the same reference in other formats.

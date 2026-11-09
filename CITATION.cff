@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper."
+title: "Measured Coupling for Parallel Decoding in Diffusion Language Models"
+authors:
+  - family-names: Oved
+    given-names: Tal
+    affiliation: Tel Aviv University
+  - family-names: Wolf
+    given-names: Lior
+    affiliation: Tel Aviv University
+repository-code: "https://github.com/TalOved1/measured-coupling"
+url: "https://arxiv.org/abs/2611.08307"
+license: MIT
+date-released: "2026-11-05"
+preferred-citation:
+  type: article
+  title: "Measured Coupling for Parallel Decoding in Diffusion Language Models"
+  authors:
+    - family-names: Oved
+      given-names: Tal
+    - family-names: Wolf
+      given-names: Lior
+  journal: "arXiv preprint arXiv:2611.08307"
+  year: 2026
+  url: "https://arxiv.org/abs/2611.08307"
+  identifiers:
+    - type: other
+      value: "arXiv:2611.08307"
+      description: "arXiv identifier"
