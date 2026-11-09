@@ -1,0 +1,13 @@
+# Versions used for the paper (Python 3.11, one A100 80GB, CUDA 13). Install torch for your CUDA first.
+torch==2.13.0
+triton==3.7.1
+transformers==4.49.0
+accelerate==0.34.2
+datasets==4.4.1
+evaluate==0.4.6
+lm_eval==0.4.8
+antlr4-python3-runtime==4.11.0
+math-verify[antlr4_11_0]
+numpy
+regex
+tqdm

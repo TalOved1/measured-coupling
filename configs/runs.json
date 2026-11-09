@@ -1,0 +1,1318 @@
+{
+ "dream_gsm8k/full/baseline_b32": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=32,alg=entropy",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "dream_gsm8k/full/dawn_b32": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=8,block_length=32,alg=dawn,conf_threshold=0.8,tau_induce=0.75,tau_sink=0.03,tau_edge=0.10",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "dream_gsm8k/full/fastdllm_t0.9_b32": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=8,block_length=32,alg=confidence_threshold,threshold=0.9",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "dream_gsm8k/full/fusedm_signed_k20_t0.95_b20": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=fusedm_signed,mf_tau=0.95,mf_R=2,mf_probe_k=20",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "dream_gsm8k/full/mf_t0.95_b20": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=jsd,mf_tau=0.95,mf_R=2",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "dream_gsm8k/speed200b/baseline_b32": {
+  "limit": 200.0,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=32,alg=entropy",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "dream_gsm8k/speed200b/dawn_b32": {
+  "limit": 200.0,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=8,block_length=32,alg=dawn,conf_threshold=0.8,tau_induce=0.75,tau_sink=0.03,tau_edge=0.10",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "dream_gsm8k/speed200b/fastdllm_t0.9_b32": {
+  "limit": 200.0,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=8,block_length=32,alg=confidence_threshold,threshold=0.9",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "dream_gsm8k/speed200b/mf_t0.95_b20": {
+  "limit": 200.0,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=jsd,mf_tau=0.95,mf_R=2",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "dream_gsm8k/speed200b/ours_first": {
+  "limit": 200.0,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=fusedm_signed,mf_tau=0.95,mf_R=2,mf_probe_k=20",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "dream_gsm8k/speed200b/ours_last": {
+  "limit": 200.0,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=fusedm_signed,mf_tau=0.95,mf_R=2,mf_probe_k=20",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "dream_gsm8k/train100/mf_t0.95_b20": {
+  "limit": 100.0,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=jsd,mf_tau=0.95,mf_R=2",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "dream_humaneval/full/fusedm_signed_k12_t0.97_b20": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=fusedm_signed,mf_tau=0.97,mf_R=2,mf_probe_k=12",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "dream_humaneval/speed_all2/baseline_b32": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=32,alg=entropy",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "dream_humaneval/speed_all2/dawn_b32": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=8,block_length=32,alg=dawn,conf_threshold=0.8,tau_induce=0.75,tau_sink=0.03,tau_edge=0.10",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "dream_humaneval/speed_all2/fastdllm_t0.9_b32": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=8,block_length=32,alg=confidence_threshold,threshold=0.9",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "dream_humaneval/speed_all2/mf_t0.95_b20": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=jsd,mf_tau=0.95,mf_R=2",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "dream_humaneval/speed_all2/ours_first": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=fusedm_signed,mf_tau=0.95,mf_R=2,mf_probe_k=20",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "dream_humaneval/speed_all2/ours_last": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=fusedm_signed,mf_tau=0.95,mf_R=2,mf_probe_k=20",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "dream_math/full/baseline_b32": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=32,alg=entropy",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "dream_math/full/dawn_b32": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=8,block_length=32,alg=dawn,conf_threshold=0.8,tau_induce=0.75,tau_sink=0.03,tau_edge=0.10",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "dream_math/full/fastdllm_t0.9_b32": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=8,block_length=32,alg=confidence_threshold,threshold=0.9",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "dream_math/full/fusedm_signed_k12_t0.99_b20": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=fusedm_signed,mf_tau=0.99,mf_R=2,mf_probe_k=12",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "dream_math/full/fusedm_signed_k20_t0.95_b20": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=fusedm_signed,mf_tau=0.95,mf_R=2,mf_probe_k=20",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "dream_math/full/fusedm_signed_k20_t0.99_b20": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=fusedm_signed,mf_tau=0.99,mf_R=2,mf_probe_k=20",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "dream_math/full/mf_t0.95_b20": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=jsd,mf_tau=0.95,mf_R=2",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "dream_math/speed105b/baseline_b32": {
+  "limit": 15.0,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=32,alg=entropy",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "dream_math/speed105b/dawn_b32": {
+  "limit": 15.0,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=8,block_length=32,alg=dawn,conf_threshold=0.8,tau_induce=0.75,tau_sink=0.03,tau_edge=0.10",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "dream_math/speed105b/fastdllm_t0.9_b32": {
+  "limit": 15.0,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=8,block_length=32,alg=confidence_threshold,threshold=0.9",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "dream_math/speed105b/mf_t0.95_b20": {
+  "limit": 15.0,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=jsd,mf_tau=0.95,mf_R=2",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "dream_math/speed105b/ours_first": {
+  "limit": 15.0,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=fusedm_signed,mf_tau=0.95,mf_R=2,mf_probe_k=20",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "dream_math/speed105b/ours_last": {
+  "limit": 15.0,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=fusedm_signed,mf_tau=0.95,mf_R=2,mf_probe_k=20",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "dream_mbpp/speed_all2/baseline_b32": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=32,alg=entropy",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "dream_mbpp/speed_all2/dawn_b32": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=8,block_length=32,alg=dawn,conf_threshold=0.8,tau_induce=0.75,tau_sink=0.03,tau_edge=0.10",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "dream_mbpp/speed_all2/fastdllm_t0.9_b32": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=8,block_length=32,alg=confidence_threshold,threshold=0.9",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "dream_mbpp/speed_all2/mf_t0.95_b20": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=jsd,mf_tau=0.95,mf_R=2",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "dream_mbpp/speed_all2/ours_first": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=fusedm_signed,mf_tau=0.95,mf_R=2,mf_probe_k=20",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "dream_mbpp/speed_all2/ours_last": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=fusedm_signed,mf_tau=0.95,mf_R=2,mf_probe_k=20",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "dream_mbpp/val/mf_t0.95_b20": {
+  "limit": null,
+  "model": "dream",
+  "model_args": "max_new_tokens=256,add_bos_token=true,diffusion_steps=256,block_length=20,alg=mf,mf_coupling=jsd,mf_tau=0.95,mf_R=2",
+  "num_fewshot": 3,
+  "task": "mbpp_val"
+ },
+ "llada15_gsm8k/full/baseline_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=32",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/full/dawn_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=32,dawn=True,tau_sink=0.01,tau_edge=0.07,tau_induce=0.7,tau_low=0.75",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/full/fastdllm_t0.9_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=8,block_length=32,threshold=0.9",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/full/fusedm_signed_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/full/mf_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200b/baseline_b32": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=32",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200b/dawn_b32": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=32,dawn=True,tau_sink=0.01,tau_edge=0.07,tau_induce=0.7,tau_low=0.75",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200b/fastdllm_t0.9_b32": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=8,block_length=32,threshold=0.9",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200b/mf_t0.85_b20": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.85",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200b/ours_first": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200b/ours_last": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200c/dawn_b32": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=32,dawn=True,tau_sink=0.01,tau_edge=0.07,tau_induce=0.7,tau_low=0.75",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200c/fastdllm_t0.9_b32": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=8,block_length=32,threshold=0.9",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200c/mf_t0.85_b20": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.85",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200c/ours_first": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200c/ours_last": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200d/dawn_b32": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=32,dawn=True,tau_sink=0.01,tau_edge=0.07,tau_induce=0.7,tau_low=0.75",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200d/fastdllm_t0.9_b32": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=8,block_length=32,threshold=0.9",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200d/mf_t0.85_b20": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.85",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200d/ours_first": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_gsm8k/speed200d/ours_last": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada15_humaneval/speed_all3/baseline_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=32",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada15_humaneval/speed_all3/dawn_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=32,dawn=True,tau_sink=0.01,tau_edge=0.07,tau_induce=0.7,tau_low=0.8",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada15_humaneval/speed_all3/fastdllm_t0.9_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=8,block_length=32,threshold=0.9",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada15_humaneval/speed_all3/mf_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.85",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada15_humaneval/speed_all3/ours_first": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada15_humaneval/speed_all3/ours_last": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada15_math/full/baseline_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=32",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada15_math/full/dawn_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=32,dawn=True,tau_sink=0.01,tau_edge=0.07,tau_induce=0.7,tau_low=0.75",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada15_math/full/fastdllm_t0.9_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=8,block_length=32,threshold=0.9",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada15_math/full/fusedm_signed_k12_t0.95_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.95,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada15_math/full/fusedm_signed_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada15_math/full/mf_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada15_math/speed105b/baseline_b32": {
+  "limit": 15.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=32",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada15_math/speed105b/dawn_b32": {
+  "limit": 15.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=32,dawn=True,tau_sink=0.01,tau_edge=0.07,tau_induce=0.7,tau_low=0.75",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada15_math/speed105b/fastdllm_t0.9_b32": {
+  "limit": 15.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=8,block_length=32,threshold=0.9",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada15_math/speed105b/mf_t0.85_b20": {
+  "limit": 15.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.85",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada15_math/speed105b/ours_first": {
+  "limit": 15.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada15_math/speed105b/ours_last": {
+  "limit": 15.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada15_mbpp/speed_all2/baseline_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=32",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada15_mbpp/speed_all2/dawn_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=32,dawn=True,tau_sink=0.01,tau_edge=0.07,tau_induce=0.7,tau_low=0.75",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada15_mbpp/speed_all2/fastdllm_t0.9_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=8,block_length=32,threshold=0.9",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada15_mbpp/speed_all2/mf_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.85",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada15_mbpp/speed_all2/ours_first": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada15_mbpp/speed_all2/ours_last": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-1.5,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_gsm8k/full/baseline_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/ctrl_bonus0.02_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12,mf_control=bonus:0.02",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/ctrl_conflict_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12,mf_control=conflict",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/ctrl_csup0.05_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12,mf_control=csup:0.05",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/ctrl_shuffle_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12,mf_control=shuffle",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/ctrl_support_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12,mf_control=support",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/ctrl_sym_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12,mf_control=sym",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/dawn_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32,dawn=True,tau_sink=0.01,tau_edge=0.07,tau_induce=0.7,tau_low=0.75",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/fastdllm_t0.9_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=8,block_length=32,threshold=0.9",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/flip_rho0.05_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_coupling=flip,mf_lag_log=True,mf_flip_rho=0.05",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/fusedm_signed_k12_t0.75_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.75,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/fusedm_signed_k12_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/fusedm_signed_k12_t0.9_b16": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=16,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/fusedm_signed_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/fusedm_signed_k12_t0.9_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/fusedm_signed_k12_t0.9_b64": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=64,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/fusedm_signed_k20_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=20",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/fusedm_signed_k4_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=4",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/fusedm_signed_k8_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=8",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/mf_nopair_t0.7_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.7,mf_R=2,mf_pairwise=False",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/mf_nopair_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_pairwise=False",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/mf_t0.85_b16": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=16,mf=True,mf_tau=0.85,mf_R=2",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/mf_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/mf_t0.85_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32,mf=True,mf_tau=0.85,mf_R=2",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full/mf_t0.85_b64": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=64,mf=True,mf_tau=0.85,mf_R=2",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full_cached/cached_fastdllm_t0.9_b32_k4": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32,threshold=0.9,use_cache=True,dual_cache=True,cache_graph=True,cache_kernel=4",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full_cached/cached_mf_t0.85_b32_k4": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32,mf=True,mf_tau=0.85,mf_R=2,mf_dual_cache=True,cache_graph=True,cache_kernel=4",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/full_cached/cached_ours_b32_k4_t0.9_k4": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=4,mf_dual_cache=True,cache_graph=True,cache_kernel=4",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/latency/ours_t0.9_first": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/latency/ours_t0.9_last": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/speed200/baseline_b32": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/speed200/dawn_b32": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32,dawn=True,tau_sink=0.01,tau_edge=0.07,tau_induce=0.7,tau_low=0.75",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/speed200/fastdllm_t0.9_b32": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=8,block_length=32,threshold=0.9",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/speed200/mf_t0.85_b20": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.85",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/speed200/ours_first": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/speed200/ours_last": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k"
+ },
+ "llada_gsm8k/train100/flip_rho0.05_b20": {
+  "limit": 100.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_coupling=flip,mf_lag_log=True,mf_flip_rho=0.05",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "llada_gsm8k/train100/fused_signed_k20_t0.85_b20": {
+  "limit": 100.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_coupling=fused_signed,mf_probe_k=20",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "llada_gsm8k/train100/fused_signed_k20_t0.9_b20": {
+  "limit": 100.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fused_signed,mf_probe_k=20",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "llada_gsm8k/train100/fusedm_signed_k12_t0.85_b20": {
+  "limit": 100.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "llada_gsm8k/train100/fusedm_signed_k12_t0.93_b20": {
+  "limit": 100.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.93,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "llada_gsm8k/train100/fusedm_signed_k12_t0.95_b20": {
+  "limit": 100.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.95,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "llada_gsm8k/train100/fusedm_signed_k12_t0.97_b20": {
+  "limit": 100.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.97,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "llada_gsm8k/train100/fusedm_signed_k12_t0.9_b20": {
+  "limit": 100.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "llada_gsm8k/train100/fusedm_signed_k8_t0.85_b20": {
+  "limit": 100.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=8",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "llada_gsm8k/train100/fusedm_signed_k8_t0.9_b20": {
+  "limit": 100.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=8",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "llada_gsm8k/train100/probe_signed_k12_t0.85_b20": {
+  "limit": 100.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_coupling=probe_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "llada_gsm8k/train100/probe_signed_k12_t0.9_b20": {
+  "limit": 100.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=probe_signed,mf_probe_k=12",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "llada_gsm8k/train100/probe_signed_k8_t0.85_b20": {
+  "limit": 100.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_coupling=probe_signed,mf_probe_k=8",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "llada_gsm8k/train100/probe_signed_k8_t0.9_b20": {
+  "limit": 100.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=probe_signed,mf_probe_k=8",
+  "num_fewshot": 5,
+  "task": "gsm8k_train"
+ },
+ "llada_humaneval/full/flip_rho0.05_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_coupling=flip,mf_lag_log=True,mf_flip_rho=0.05",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada_humaneval/full/fusedm_signed_k12_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada_humaneval/full/mf_nopair_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_pairwise=False",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada_humaneval/latency/ours_t0.9_first": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada_humaneval/latency/ours_t0.9_last": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada_humaneval/speed_all4/baseline_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada_humaneval/speed_all4/dawn_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32,dawn=True,tau_sink=0.01,tau_edge=0.07,tau_induce=0.7,tau_low=0.8",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada_humaneval/speed_all4/fastdllm_t0.9_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=8,block_length=32,threshold=0.9",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada_humaneval/speed_all4/mf_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.85",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada_humaneval/speed_all4/ours": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 0,
+  "task": "humaneval"
+ },
+ "llada_math/full/baseline_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada_math/full/dawn_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32,dawn=True,tau_sink=0.01,tau_edge=0.07,tau_induce=0.7,tau_low=0.75",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada_math/full/fastdllm_t0.9_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=8,block_length=32,threshold=0.9",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada_math/full/fusedm_signed_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada_math/full/mf_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada_math/speed105/baseline_b32": {
+  "limit": 15.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada_math/speed105/dawn_b32": {
+  "limit": 15.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32,dawn=True,tau_sink=0.01,tau_edge=0.07,tau_induce=0.7,tau_low=0.75",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada_math/speed105/fastdllm_t0.9_b32": {
+  "limit": 15.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=8,block_length=32,threshold=0.9",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada_math/speed105/mf_t0.85_b20": {
+  "limit": 15.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.85",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada_math/speed105/ours_first": {
+  "limit": 15.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada_math/speed105/ours_last": {
+  "limit": 15.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 4,
+  "task": "minerva_math"
+ },
+ "llada_mbpp/full/ctrl_bonus0.02_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12,mf_control=bonus:0.02",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/full/ctrl_conflict_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12,mf_control=conflict",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/full/ctrl_csup0.05_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12,mf_control=csup:0.05",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/full/ctrl_shuffle_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12,mf_control=shuffle",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/full/ctrl_support_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12,mf_control=support",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/full/ctrl_sym_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12,mf_control=sym",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/full/flip_rho0.05_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_coupling=flip,mf_lag_log=True,mf_flip_rho=0.05",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/full/fusedm_signed_k12_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/full/fusedm_signed_k12_t0.95_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.95,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/full/mf_nopair_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_pairwise=False",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/full_cached/cached_fastdllm_t0.9_b32_k4": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32,threshold=0.9,use_cache=True,dual_cache=True,cache_graph=True,cache_kernel=4",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/full_cached/cached_mf_t0.85_b32_k4": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32,mf=True,mf_tau=0.85,mf_R=2,mf_dual_cache=True,cache_graph=True,cache_kernel=4",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/full_cached/cached_ours_b32_k4_t0.9_k4": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=4,mf_dual_cache=True,cache_graph=True,cache_kernel=4",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/latency/ours_t0.9_first": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/latency/ours_t0.9_last": {
+  "limit": 200.0,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/speed_all4/baseline_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/speed_all4/dawn_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=32,dawn=True,tau_sink=0.01,tau_edge=0.07,tau_induce=0.7,tau_low=0.7",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/speed_all4/fastdllm_t0.9_b32": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=8,block_length=32,threshold=0.9",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/speed_all4/mf_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.85",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/speed_all4/ours": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_R=2,mf_tau=0.9,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 3,
+  "task": "mbpp"
+ },
+ "llada_mbpp/val/fused_signed_k12_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_coupling=fused_signed,mf_probe_k=12",
+  "num_fewshot": 3,
+  "task": "mbpp_val"
+ },
+ "llada_mbpp/val/fused_signed_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fused_signed,mf_probe_k=12",
+  "num_fewshot": 3,
+  "task": "mbpp_val"
+ },
+ "llada_mbpp/val/fused_signed_k20_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2,mf_coupling=fused_signed,mf_probe_k=20",
+  "num_fewshot": 3,
+  "task": "mbpp_val"
+ },
+ "llada_mbpp/val/fused_signed_k20_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fused_signed,mf_probe_k=20",
+  "num_fewshot": 3,
+  "task": "mbpp_val"
+ },
+ "llada_mbpp/val/fusedm_signed_k12_t0.93_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.93,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 3,
+  "task": "mbpp_val"
+ },
+ "llada_mbpp/val/fusedm_signed_k12_t0.95_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.95,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 3,
+  "task": "mbpp_val"
+ },
+ "llada_mbpp/val/fusedm_signed_k12_t0.97_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.97,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 3,
+  "task": "mbpp_val"
+ },
+ "llada_mbpp/val/fusedm_signed_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=12",
+  "num_fewshot": 3,
+  "task": "mbpp_val"
+ },
+ "llada_mbpp/val/fusedm_signed_k20_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=20",
+  "num_fewshot": 3,
+  "task": "mbpp_val"
+ },
+ "llada_mbpp/val/fusedm_signed_k8_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=fusedm_signed,mf_probe_k=8",
+  "num_fewshot": 3,
+  "task": "mbpp_val"
+ },
+ "llada_mbpp/val/mf_t0.85_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.85,mf_R=2",
+  "num_fewshot": 3,
+  "task": "mbpp_val"
+ },
+ "llada_mbpp/val/probe_signed_k12_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=probe_signed,mf_probe_k=12",
+  "num_fewshot": 3,
+  "task": "mbpp_val"
+ },
+ "llada_mbpp/val/probe_signed_k8_t0.9_b20": {
+  "limit": null,
+  "model": "llada_dist",
+  "model_args": "model_path=GSAI-ML/LLaDA-8B-Instruct,gen_length=256,steps=256,block_length=20,mf=True,mf_tau=0.9,mf_R=2,mf_coupling=probe_signed,mf_probe_k=8",
+  "num_fewshot": 3,
+  "task": "mbpp_val"
+ }
+}

@@ -1,0 +1,1031 @@
+# Copyright 2025 NVIDIA CORPORATION & AFFILIATES
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+# Modified from LLaDA repos: https://github.com/ML-GSAI/LLaDA
+
+import torch
+import math
+import time as _time
+BLOCK_START_TIME = [0.0]  # seconds spent in block-start full passes (cached decoders), reset by the caller
+import numpy as np
+import torch.nn.functional as F
+import os
+from transformers import AutoTokenizer, AutoModel
+from model.modeling_llada import LLaDAModelLM
+
+from torch.cuda import nvtx
+
+from gdllm_utils import *
+from mf_select import get_transfer_index_mf, fused_forward, cached_probe_logits, rotate_kv_cache, probe_windows, fused_forward_windowed, scatter_window_logits
+
+def add_gumbel_noise(logits, temperature):
+    '''
+    The Gumbel max is a method for sampling categorical distributions.
+    According to arXiv:2409.02908, for MDM, low-precision Gumbel Max improves perplexity score but reduces generation quality.
+    Thus, we use float64.
+    '''
+    if temperature == 0:
+        return logits
+    logits = logits.to(torch.float64)
+    noise = torch.rand_like(logits, dtype=torch.float64)
+    gumbel_noise = (- torch.log(noise)) ** temperature
+    return logits.exp() / gumbel_noise
+
+
+# def get_num_transfer_tokens(mask_index, steps):
+#     '''
+#     In the reverse process, the interval [0, 1] is uniformly discretized into steps intervals.
+#     Furthermore, because LLaDA employs a linear noise schedule (as defined in Eq. (8)),
+#     the expected number of tokens transitioned at each step should be consistent.
+
+#     This function is designed to precompute the number of tokens that need to be transitioned at each step.
+#     '''
+#     mask_num = mask_index.sum(dim=1, keepdim=True)
+
+#     base = mask_num // steps
+#     remainder = mask_num % steps
+
+#     num_transfer_tokens = torch.zeros(mask_num.size(0), steps, device=mask_index.device, dtype=torch.int64) + base
+
+#     for i in range(mask_num.size(0)):
+#         num_transfer_tokens[i, :remainder[i]] += 1
+
+#     return num_transfer_tokens
+
+def get_num_transfer_tokens(block_mask_index: torch.Tensor, steps: int) -> torch.Tensor:
+    """
+    block_mask_index: (B, L) bool – which positions are masked in the current block
+    returns: (B, steps) int – how many tokens to transfer at each step per batch item
+    """
+    device = block_mask_index.device
+    dtype = torch.long
+
+    total = block_mask_index.sum(dim=1)                  # (B,)
+    base  = torch.div(total, steps, rounding_mode='floor')  # (B,)
+    rem   = total - base * steps                         # (B,)
+
+    # Start with base for all steps
+    num_transfer_tokens = base.unsqueeze(1).expand(-1, steps).to(dtype)  # (B, steps)
+
+    # Add +1 to the first `rem[b]` steps for each batch b — without tensor slicing
+    cols = torch.arange(steps, device=device).unsqueeze(0)               # (1, steps)
+    add_mask = cols < rem.unsqueeze(1)                                   # (B, steps)
+    num_transfer_tokens = num_transfer_tokens + add_mask.to(dtype)       # (B, steps)
+
+    return num_transfer_tokens
+
+
+
+@ torch.no_grad()
+def generate(model, prompt, steps=128, gen_length=128, block_length=128, temperature=0.,
+             remasking='low_confidence', mask_id=126336, threshold=None, factor=None, dawn=False, local_leap=False, tau_sink=0.01, tau_edge=0.07, tau_induce=0.7, tau_low=0.7, relaxed_threshold=0.75, radius=4,
+             mf=False, mf_tau=0.85, mf_R=2, mf_pairwise=True, mf_uniform_D=False, mf_damping=1.0, mf_coupling='jsd', mf_estimator=None, mf_flip_rho=0.05, mf_flip_eps=None, mf_probe_k=8, mf_probe_graph=False, mf_plugin=None, mf_plugin_kw=None, mf_control=None, mf_probe_window=0, mf_probe_attn='manual', mf_probe_every=1):
+    '''
+    Args:
+        model: Mask predictor.
+        prompt: A tensor of shape (1, L).
+        steps: Sampling steps, less than or equal to gen_length.
+        gen_length: Generated answer length.
+        block_length: Block length, less than or equal to gen_length. If less than gen_length, it means using semi_autoregressive remasking.
+        temperature: Categorical distribution sampling temperature.
+        cfg_scale: Unsupervised classifier-free guidance scale.
+        remasking: Remasking strategy. 'low_confidence' or 'random'.
+        mask_id: The toke id of [MASK] is 126336.
+    '''
+    x = torch.full((prompt.shape[0], prompt.shape[1] + gen_length), mask_id, dtype=torch.long).to(model.device)
+    x[:, :prompt.shape[1]] = prompt.clone()
+    # conf_arch = torch.full((prompt.shape[0], prompt.shape[1] + gen_length), 0, dtype=torch.float64).to(model.device)
+    # conf_arch[:, :prompt.shape[1]] = 1
+
+    # Threshold-style rules (MF) choose the count per step themselves, so a last partial block is allowed.
+    if mf:
+        num_blocks = -(-gen_length // block_length)
+        steps = block_length
+    else:
+        assert gen_length % block_length == 0
+        num_blocks = gen_length // block_length
+
+        assert steps % num_blocks == 0
+        steps = steps // num_blocks
+
+    if mf_estimator is not None:
+        mf_estimator.start_question()
+    nfe = 0
+    for num_block in range(num_blocks):
+        block_mask_index = (x[:, prompt.shape[1] + num_block * block_length: prompt.shape[1] + (num_block + 1) * block_length] == mask_id)
+        num_transfer_tokens = get_num_transfer_tokens(block_mask_index, steps)
+        i = 0
+        if num_block == 0:
+            prev = None  # fused probes: proposals and margins of the previous step (carried across blocks)
+        while True:
+            nfe += 1
+            mask_index = (x == mask_id)
+            mask_index[:, prompt.shape[1] + (num_block + 1) * block_length:] = 0
+            blk = (prompt.shape[1] + num_block * block_length, min(prompt.shape[1] + (num_block + 1) * block_length, x.shape[1]))
+            fused = mf and mf_coupling.startswith(('fused_', 'fusedm_')) and mf_probe_k > 0  # K = 0: no probes (D = 0)
+            probe_info = None
+            # mf_probe_every = n: probes only on every n-th step of a block (the others use no coupling, D = 0)
+            skip = fused and mf_probe_every > 1 and prev is not None and (i % mf_probe_every) != 0
+            if skip:
+                output, _ = model(x)
+                logits = output.logits
+                coupling_now, kv_now = 'jsd', None
+            elif fused and prev is not None:
+                # One pass for the main logits and the probes. Probe tokens and the choice of probed
+                # candidates come from the previous step (the main logits of this step are not known yet).
+                assert x.shape[0] == 1, 'fused probes use batch size 1'
+                pos_now = mask_index[0].nonzero(as_tuple=True)[0]
+                Pj = pos_now[torch.topk(prev['c'][pos_now], min(mf_probe_k, pos_now.numel())).indices]
+                if mf_coupling.startswith('fusedm_') and mf_probe_window > 0:
+                    # windowed probes: each row recomputes only the masked positions within +-w of its candidate;
+                    # outside the window the probe margin is the main one (Delta = 0), as for unprobed pairs
+                    wpos, wvalid, widx = probe_windows(pos_now, Pj, mf_probe_window)
+                    rows = x[0, wpos].clone()
+                    rows[(wpos == Pj.unsqueeze(1)) & wvalid] = prev['v'][Pj]
+                    logits, pl_w = fused_forward_windowed(model, x[0], rows, wpos, wvalid)
+                    probe_logits = scatter_window_logits(pl_w, widx, wvalid, pos_now.numel(),
+                                                         logits[0, pos_now].unsqueeze(0).expand(Pj.numel(), -1, -1))
+                elif mf_coupling.startswith('fusedm_'):
+                    # probe rows recompute only the still-masked positions (one of them revealed)
+                    rows = x[0, pos_now].unsqueeze(0).repeat(Pj.numel(), 1)
+                    rows[torch.arange(Pj.numel(), device=x.device), torch.searchsorted(pos_now, Pj)] = prev['v'][Pj]
+                    logits, probe_logits = fused_forward(model, x[0], rows, pos_now, attn=mf_probe_attn)
+                else:
+                    rows = x[0, blk[0]:blk[1]].unsqueeze(0).repeat(Pj.numel(), 1)
+                    rows[torch.arange(Pj.numel(), device=x.device), Pj - blk[0]] = prev['v'][Pj]
+                    logits, probe_logits = fused_forward(model, x[0], rows, blk)
+                probe_info = (Pj, prev['v'][Pj], probe_logits)
+                coupling_now, kv_now = mf_coupling, None
+            else:
+                # Normal pass. The first step of a fused block uses separate probes (no previous step).
+                cached = mf and mf_probe_k > 0 and mf_coupling.startswith(('cached_', 'probe_', 'fused_', 'fusedm_'))
+                output, avg_attn_scores = model(x, return_attn_scores=dawn, use_cache=cached)
+                logits = output.logits
+                coupling_now = ('probe_' + mf_coupling.split('_', 1)[1]) if fused else (mf_coupling if mf_probe_k > 0 else 'jsd')
+                kv_now = output.past_key_values if cached else None
+            if mf:
+                x0, transfer_index = get_transfer_index_mf(logits, mask_index, x, tau=mf_tau, R=mf_R, use_pairwise=mf_pairwise and not skip, uniform_D=mf_uniform_D, damping=mf_damping, coupling=coupling_now, model=model, estimator=mf_estimator, flip_rho=mf_flip_rho, flip_eps=mf_flip_eps,
+                                                               kv_cache=kv_now, block=blk, probe_k=mf_probe_k, probe_graph=mf_probe_graph, probe_info=probe_info,
+                                                               plugin=mf_plugin, plugin_kw=mf_plugin_kw, control=mf_control)
+                if fused:
+                    # Margins of this block and the next one only (the rest is never probed). The next
+                    # block's predictions let its first step be fused too.
+                    hi = min(blk[1] + block_length, x.shape[1])
+                    lp = torch.log_softmax(logits[0, blk[0]:hi].float(), -1)
+                    top2 = lp.topk(2, -1).values
+                    c_prev = torch.full((x.shape[1],), float('-inf'), device=x.device)
+                    c_prev[blk[0]:hi] = top2[:, 0] - top2[:, 1]
+                    v_prev = x0[0].clone()
+                    v_prev[blk[1]:hi] = logits[0, blk[1]:hi].argmax(-1)
+                    prev = {'v': v_prev, 'c': c_prev}
+            elif factor is not None:
+                x0, transfer_index = get_transfer_index_dynamic(logits, temperature, remasking, mask_index, x, None, factor)
+            elif dawn:
+                x0, transfer_index = get_transfer_index_dawn(logits, temperature, remasking, mask_index, x, None, avg_attn_scores, tau_sink=tau_sink, tau_edge=tau_edge, tau_induce=tau_induce, tau_low=tau_low, num_block = num_block, block_length = block_length, prompt_length = prompt.shape[1])
+            elif local_leap:
+                x0, transfer_index = get_transfer_index_localleap(logits, temperature, remasking, mask_index, x, None, threshold = threshold, relaxed_threshold = relaxed_threshold, radius = radius)
+            else:
+                x0, transfer_index = get_transfer_index(logits, temperature, remasking, mask_index, x, num_transfer_tokens[:, i] if threshold is None else None, threshold)
+            
+            x[transfer_index] = x0[transfer_index]
+            i += 1
+            if (x[:, prompt.shape[1] + num_block * block_length: prompt.shape[1] + (num_block + 1) * block_length] == mask_id).sum() == 0:
+                break
+    return x, nfe
+
+
+
+@ torch.no_grad()
+@torch.no_grad()
+def generate_mf_dual_cache(model, prompt, gen_length=256, block_length=20, mask_id=126336, mf_tau=0.9, mf_R=2,
+                           mf_coupling='jsd', mf_probe_k=12, mf_pairwise=True, graph=None, probe_select='top'):
+    """Mean-field decoding (mf_coupling='jsd') or measured coupling (mf_coupling='fusedm_signed') with Fast-dLLM's
+    dual cache. At the start of every block one full pass fills the cache; each later step runs the block, and the
+    probe rows, in ONE pass against the cached keys/values of the rest of the sequence (mf_select.cached_step,
+    shared-context attention). The cache is rotated once per block; each step rewrites the block's keys in place.
+    Probe candidates and tokens come from the previous step and stale probes are dropped, as in the uncached method.
+    At a block start the probes run against the fresh cache in a probes-only call (one extra, cheap call).
+    graph: a mf_select.CachedStepGraph (K = mf_probe_k for ours, 0 for MF) to replay steps from CUDA graphs.
+    probe_select: 'top' probes the most confident candidates (as the uncached method); 'near' probes those whose
+    margin is closest to logit(tau), where a coupling is most likely to change the decision.
+    Returns (x, nfe) with nfe = number of decoding steps."""
+    assert prompt.shape[0] == 1, 'batch size 1'
+    Lp = prompt.shape[1]; Ltot = Lp + gen_length
+    x = torch.full((1, Ltot), mask_id, dtype=torch.long, device=model.device)
+    x[:, :Lp] = prompt
+    fused = mf_coupling.startswith('fusedm_') and mf_probe_k > 0
+    from mf_select import cached_step, block_context
+    nfe, prev = 0, None
+
+    def margins(lg):  # (n, V) -> top-1 minus top-2 log-prob
+        t2 = torch.log_softmax(lg.float(), -1).topk(2, -1).values
+        return t2[:, 0] - t2[:, 1]
+
+    for nb in range(-(-gen_length // block_length)):
+        s = Lp + nb * block_length; e = min(s + block_length, Ltot); hi = min(e + block_length, Ltot)
+        first = True
+        while (x[0, s:e] == mask_id).any():
+            pos = (x[0, s:e] == mask_id).nonzero(as_tuple=True)[0] + s
+            mask_index = torch.zeros_like(x, dtype=torch.bool); mask_index[0, pos] = True
+            if first:
+                torch.cuda.synchronize(); _t0 = _time.perf_counter()
+                out = model(x, use_cache=True); out = out[0] if isinstance(out, tuple) else out
+                ctx = block_context(rotate_kv_cache(model, out.past_key_values), s, e)  # context outside the block
+                if graph is not None:
+                    graph.set_context(ctx, s, e)
+                torch.cuda.synchronize(); BLOCK_START_TIME[0] += _time.perf_counter() - _t0
+                blk_logits = out.logits[:, s:e]
+                nxt = (margins(out.logits[0, e:hi]), out.logits[0, e:hi].argmax(-1)) if hi > e else None
+                if fused and prev is None:  # first step of the answer: no previous step, use this pass's proposals
+                    prev = {'c': torch.full((Ltot,), float('-inf'), device=x.device), 'v': x[0].clone()}
+                    prev['c'][s:e] = margins(blk_logits[0]); prev['v'][s:e] = blk_logits[0].argmax(-1)
+            probe_info = None
+            if fused:
+                kk = min(mf_probe_k, pos.numel())
+                if probe_select == 'near':
+                    lt = math.log(mf_tau / (1 - mf_tau))
+                    Pj = pos[torch.topk(-(prev['c'][pos] - lt).abs(), kk).indices]
+                else:
+                    Pj = pos[torch.topk(prev['c'][pos], kk).indices]
+                rows = x[0, pos].unsqueeze(0).repeat(Pj.numel(), 1)
+                rows[torch.arange(Pj.numel(), device=x.device), torch.searchsorted(pos, Pj)] = prev['v'][Pj]
+            if first:
+                if fused:  # probes against the fresh cache; the main logits are those of the full pass
+                    if graph is not None:  # the block row of the graph is computed and ignored here
+                        _, pl = graph.step(x[0], s, e, rows, pos)
+                    else:
+                        _, pl = cached_step(model, x[0], s, e, ctx, rows, pos, probes_only=True)
+                    probe_info = (Pj, prev['v'][Pj], pl)
+            else:
+                if graph is not None:
+                    blk_logits, pl = graph.step(x[0], s, e, rows if fused else None, pos if fused else None)
+                else:
+                    blk_logits, pl = cached_step(model, x[0], s, e, ctx, rows if fused else None, pos if fused else None)
+                if fused:
+                    probe_info = (Pj, prev['v'][Pj], pl)
+            nfe += 1
+            # The commit rule on the block alone (it reads only masked positions): block-local tensors, with the
+            # probe candidates shifted to block coordinates. Same result as the full-sequence call, far cheaper.
+            pinfo = None if probe_info is None else (probe_info[0] - s, probe_info[1], probe_info[2])
+            x0b, tib = get_transfer_index_mf(blk_logits, mask_index[:, s:e], x[:, s:e], tau=mf_tau, R=mf_R, use_pairwise=mf_pairwise,
+                                             coupling=mf_coupling if fused else 'jsd', block=(0, e - s), probe_info=pinfo)
+            x0 = x.clone(); x0[:, s:e] = x0b
+            ti = torch.zeros_like(mask_index); ti[:, s:e] = tib
+            if fused:  # this step's proposals and margins, plus the next block's predictions from the last full pass
+                prev = {'c': torch.full((Ltot,), float('-inf'), device=x.device), 'v': x0[0].clone()}
+                prev['c'][s:e] = margins(blk_logits[0])
+                if nxt is not None:
+                    prev['c'][e:hi], prev['v'][e:hi] = nxt
+            x[ti] = x0[ti]
+            first = False
+    return x, nfe
+
+
+def _logit_margin(lg, tok):
+    """log p(tok) - max_{v != tok} log p(v), computed on logits (the softmax normalizer cancels): (..., V) -> (...)."""
+    lg = lg.float()
+    top2 = lg.topk(2, -1)
+    l_tok = lg.gather(-1, tok.unsqueeze(-1)).squeeze(-1)
+    other = torch.where(top2.indices[..., 0] == tok, top2.values[..., 1], top2.values[..., 0])
+    return l_tok - other
+
+
+@torch.no_grad()
+def generate_mf_dual_cache_lean(model, prompt, gen_length=256, block_length=32, mask_id=126336, mf_tau=0.9, mf_R=2,
+                                mf_probe_k=4, graph=None):
+    """generate_mf_dual_cache for measured coupling (fusedm_signed) with the per-step work cut down. Same decoding
+    rule: candidates and probe tokens from the previous step, stale probes dropped, Delta_ij = c_i - c_i^(j) on the
+    probed columns, two mean-field updates from sigmoid(c), commit q >= tau (and the argmax). Margins are computed
+    from logits on two entries per position (exact: the softmax normalizer cancels), no full-vocabulary softmax,
+    no full-sequence tensors, one host sync per step. Returns (x, nfe)."""
+    assert prompt.shape[0] == 1 and graph is not None
+    Lp = prompt.shape[1]; Ltot = Lp + gen_length
+    x = torch.full((Ltot,), mask_id, dtype=torch.long, device=model.device); x[:Lp] = prompt[0]
+    from mf_select import block_context
+    nfe = 0
+    pc = pv = None  # previous step: margins / proposals over [s, hi) (this block and the next one)
+    for nb in range(-(-gen_length // block_length)):
+        s = Lp + nb * block_length; e = min(s + block_length, Ltot); hi = min(e + block_length, Ltot)
+        torch.cuda.synchronize(); _t0 = _time.perf_counter()
+        out = model(x.unsqueeze(0), use_cache=True); out = out[0] if isinstance(out, tuple) else out
+        graph.set_context(block_context(rotate_kv_cache(model, out.past_key_values), s, e), s, e)
+        torch.cuda.synchronize(); BLOCK_START_TIME[0] += _time.perf_counter() - _t0
+        lg_blk = out.logits[0, s:e]
+        nxt_v = out.logits[0, e:hi].argmax(-1); nxt_c = _logit_margin(out.logits[0, e:hi], nxt_v)
+        if pc is None:  # first step of the answer: this pass's proposals stand in for a previous step
+            pv = lg_blk.argmax(-1); pc = _logit_margin(lg_blk, pv)
+        else:  # the previous block's step left this block's predictions as the last entries
+            pv, pc = pv[-(e - s):], pc[-(e - s):]
+        first = True
+        while True:
+            blk = x[s:e]
+            masked = (blk == mask_id).nonzero(as_tuple=True)[0]  # one host sync per step
+            m = masked.numel()
+            if m == 0:
+                break
+            pos = masked + s
+            kk = min(mf_probe_k, m)
+            sel = torch.topk(pc[masked], kk).indices  # candidates: most confident by the previous step
+            Pj = masked[sel]
+            rows = blk[masked].unsqueeze(0).repeat(kk, 1)
+            rows[torch.arange(kk, device=x.device), sel] = pv[Pj]
+            b_lg, p_lg = graph.step(x, s, e, rows, pos)
+            if not first:
+                lg_blk = b_lg[0]
+            nfe += 1
+            lgm = lg_blk[masked]                          # (m, V)
+            v = lgm.argmax(-1)
+            c = _logit_margin(lgm, v)                    # (m,)
+            mP = _logit_margin(p_lg, v.unsqueeze(0).expand(kk, -1))  # (kk, m): margin of v_i with candidate j revealed
+            valid = (pv[Pj] == v[sel])                   # stale probe: its token is no longer the proposal
+            D = torch.zeros(m, m, device=x.device)
+            D[:, sel] = torch.where(valid.unsqueeze(0), c.unsqueeze(1) - mP.T, torch.zeros_like(mP.T))
+            D.fill_diagonal_(0.0)
+            q = torch.sigmoid(c)
+            for _ in range(mf_R):
+                q = torch.sigmoid(c - D @ q)
+            commit = q >= mf_tau
+            commit[q.argmax()] = True
+            nb_ = blk.clone(); nb_[masked[commit]] = v[commit]; x[s:e] = nb_
+            # this step's proposals / margins for the block, then the next block's from the last full pass
+            full_v = blk.clone(); full_v[masked] = v
+            full_c = torch.full((e - s,), float('-inf'), device=x.device); full_c[masked] = c
+            pv = torch.cat([full_v, nxt_v]); pc = torch.cat([full_c, nxt_c])
+            first = False
+    return x.unsqueeze(0), nfe
+
+
+@torch.no_grad()
+def generate_mf_dual_cache_graphrule(model, prompt, gen_length=256, block_length=32, mask_id=126336, mf_tau=0.9, mf_R=2,
+                                     mf_probe_k=4, graph=None):
+    """generate_mf_dual_cache_lean with the commit rule inside the CUDA graph (graph = CachedStepGraph(..., rule=
+    (tau, R, mask_id))). Same decisions (graph_commit_rule reproduces the lean rule exactly). At a block start the
+    main logits come from the full pass, so that step uses the lean rule on the host. Returns (x, nfe)."""
+    assert prompt.shape[0] == 1 and graph is not None and graph.rule is not None
+    Lp = prompt.shape[1]; Ltot = Lp + gen_length
+    x = torch.full((Ltot,), mask_id, dtype=torch.long, device=model.device); x[:Lp] = prompt[0]
+    from mf_select import block_context
+    nfe = 0
+    pc = pv = None
+    for nb in range(-(-gen_length // block_length)):
+        s = Lp + nb * block_length; e = min(s + block_length, Ltot); hi = min(e + block_length, Ltot); bl = e - s
+        torch.cuda.synchronize(); _t0 = _time.perf_counter()
+        out = model(x.unsqueeze(0), use_cache=True); out = out[0] if isinstance(out, tuple) else out
+        graph.set_context(block_context(rotate_kv_cache(model, out.past_key_values), s, e), s, e)
+        torch.cuda.synchronize(); BLOCK_START_TIME[0] += _time.perf_counter() - _t0
+        lg_blk = out.logits[0, s:e]
+        nxt_v = out.logits[0, e:hi].argmax(-1); nxt_c = _logit_margin(out.logits[0, e:hi], nxt_v)
+        if pc is None:
+            pv = lg_blk.argmax(-1); pc = _logit_margin(lg_blk, pv)
+        else:
+            pv, pc = pv[-bl:], pc[-bl:]
+        first = True
+        while True:
+            blk = x[s:e]
+            masked = (blk == mask_id).nonzero(as_tuple=True)[0]
+            m = masked.numel()
+            if m == 0:
+                break
+            kk = min(mf_probe_k, m)
+            sel = torch.topk(pc[masked], kk).indices
+            Pj = masked[sel]
+            if first:  # block start: main logits from the full pass; probes from the graph; lean rule on the host
+                rows = blk[masked].unsqueeze(0).repeat(kk, 1); rows[torch.arange(kk, device=x.device), sel] = pv[Pj]
+                _, p_lg = graph.step(x, s, e, rows, masked + s)
+                lgm = lg_blk[masked]; v = lgm.argmax(-1); c = _logit_margin(lgm, v)
+                mP = _logit_margin(p_lg, v.unsqueeze(0).expand(kk, -1)); valid = (pv[Pj] == v[sel])
+                D = torch.zeros(m, m, device=x.device)
+                D[:, sel] = torch.where(valid.unsqueeze(0), c.unsqueeze(1) - mP.T, torch.zeros_like(mP.T)); D.fill_diagonal_(0.0)
+                q = torch.sigmoid(c)
+                for _ in range(mf_R):
+                    q = torch.sigmoid(c - D @ q)
+                commit = q >= mf_tau; commit[q.argmax()] = True
+                new_blk = blk.clone(); new_blk[masked[commit]] = v[commit]
+            else:  # the whole step, rule included, in one graph replay
+                new_blk, v, c, _ = graph.rule_step(x, s, e, masked, sel, pv[Pj])
+            nfe += 1
+            x[s:e] = new_blk
+            full_v = blk.clone(); full_v[masked] = v
+            full_c = torch.full((bl,), float('-inf'), device=x.device); full_c[masked] = c
+            pv = torch.cat([full_v, nxt_v]); pc = torch.cat([full_c, nxt_c])
+            first = False
+    return x.unsqueeze(0), nfe
+
+
+@torch.no_grad()
+def generate_fastdllm_dual_cache_graph(model, prompt, gen_length=256, block_length=32, mask_id=126336, threshold=0.9, graph=None):
+    """Fast-dLLM's dual cache with its confidence threshold (as generate_with_dual_cache: full pass at each block
+    start, then block steps against the cache), running the block steps on the same CUDA-graph cached step as our
+    cached method (mf_select.CachedStepGraph with K = 0), so cached comparisons differ only in the decoding rule.
+    Threshold rule as get_transfer_index with threshold: commit every masked position with top probability >= the
+    threshold, and at least the most confident one. Returns (x, nfe)."""
+    from mf_select import block_context
+    assert prompt.shape[0] == 1
+    Lp = prompt.shape[1]; Ltot = Lp + gen_length
+    x = torch.full((1, Ltot), mask_id, dtype=torch.long, device=model.device); x[:, :Lp] = prompt
+    nfe = 0
+    for nb in range(-(-gen_length // block_length)):
+        s = Lp + nb * block_length; e = min(s + block_length, Ltot)
+        first = True
+        while (x[0, s:e] == mask_id).any():
+            if first:
+                torch.cuda.synchronize(); _t0 = _time.perf_counter()
+                out = model(x, use_cache=True); out = out[0] if isinstance(out, tuple) else out
+                graph.set_context(block_context(rotate_kv_cache(model, out.past_key_values), s, e), s, e)
+                torch.cuda.synchronize(); BLOCK_START_TIME[0] += _time.perf_counter() - _t0
+                blk_logits = out.logits[:, s:e]
+            else:
+                blk_logits, _ = graph.step(x[0], s, e)
+            nfe += 1
+            mask_blk = (x[:, s:e] == mask_id)
+            x0, ti = get_transfer_index(blk_logits, 0., 'low_confidence', mask_blk, x[:, s:e], None, threshold)
+            blk = x[:, s:e].clone(); blk[ti] = x0[ti]; x[:, s:e] = blk
+            first = False
+    return x, nfe
+
+
+def generate_with_prefix_cache(model, prompt, steps=128, gen_length=128, block_length=128, temperature=0.,
+             remasking='low_confidence', mask_id=126336, threshold=None, factor=None):
+    '''
+    Args:
+        model: Mask predictor.
+        prompt: A tensor of shape (1, L).
+        steps: Sampling steps, less than or equal to gen_length.
+        gen_length: Generated answer length.
+        block_length: Block length, less than or equal to gen_length. If less than gen_length, it means using semi_autoregressive remasking.
+        temperature: Categorical distribution sampling temperature.
+        cfg_scale: Unsupervised classifier-free guidance scale.
+        remasking: Remasking strategy. 'low_confidence' or 'random'.
+        mask_id: The toke id of [MASK] is 126336.
+    '''
+    x = torch.full((prompt.shape[0], prompt.shape[1] + gen_length), mask_id, dtype=torch.long).to(model.device)
+    x[:, :prompt.shape[1]] = prompt.clone()
+
+    assert gen_length % block_length == 0
+    num_blocks = gen_length // block_length
+
+    assert steps % num_blocks == 0
+    steps = steps // num_blocks
+
+    nfe = 0
+            
+    for num_block in range(num_blocks):
+        current_block_start = prompt.shape[1] + num_block * block_length
+        current_block_end = current_block_start + block_length
+
+        block_mask_index = (x[:, current_block_start:current_block_end] == mask_id)
+        num_transfer_tokens = get_num_transfer_tokens(block_mask_index, steps)
+
+        output = model(x, use_cache=True)
+        past_key_values = output.past_key_values
+
+        mask_index = (x == mask_id)
+        mask_index[:, current_block_end:] = 0
+        if factor is None:
+            x0, transfer_index = get_transfer_index(output.logits, temperature, remasking, mask_index, x, num_transfer_tokens[:, 0] if threshold is None else None, threshold)
+        else:
+            x0, transfer_index = get_transfer_index_dynamic(output.logits, temperature, remasking, mask_index, x, None, factor)
+        x[transfer_index] = x0[transfer_index]
+
+        new_past_key_values = []
+        for i in range(len(past_key_values)):
+            new_past_key_values.append(())
+            for j in range(len(past_key_values[i])):
+                new_past_key_values[i] += (past_key_values[i][j][:, :, :current_block_start],)
+        
+        past_key_values = new_past_key_values
+        nfe += 1
+        
+        i = 1
+        while True:
+            if (x[:, current_block_start:current_block_end] == mask_id).sum() == 0:
+                break
+            nfe += 1
+            mask_index = (x[:, current_block_start:] == mask_id)
+            mask_index[:, block_length:] = 0
+
+            logits = model(x[:, current_block_start:], past_key_values=past_key_values, use_cache=True).logits
+
+            logits_with_noise = add_gumbel_noise(logits, temperature=temperature)
+            x0 = torch.argmax(logits_with_noise, dim=-1) # b, l
+
+            if factor is None:
+                x0, transfer_index = get_transfer_index(logits, temperature, remasking, mask_index, 
+                                                x[:, current_block_start:], num_transfer_tokens[:, i] if threshold is None else None, threshold)
+            else:
+                x0, transfer_index = get_transfer_index_dynamic(logits, temperature, remasking, mask_index, 
+                                                x[:, current_block_start:], None, factor)
+            x[:, current_block_start:][transfer_index] = x0[transfer_index]
+            
+            i += 1
+
+
+    return x, nfe
+
+@torch.no_grad()
+def generate_with_dual_cache(
+    model, prompt, steps=128, gen_length=128, block_length=128, temperature=0.,
+    remasking="low_confidence", mask_id=126336, threshold=None, factor=None
+):
+    B = prompt.shape[0]
+    Lp = int(prompt.shape[1])  # Python int, not Tensor
+    assert gen_length % block_length == 0
+    num_blocks = gen_length // block_length
+
+    assert steps % num_blocks == 0
+    steps_per_block = steps // num_blocks
+
+    # x: (B, Lp + gen_length)
+    x = torch.full((B, Lp + gen_length), mask_id, dtype=torch.long, device=model.device)
+    x[:, :Lp] = prompt
+
+    nfe = 0
+
+    for nb in range(num_blocks):
+        s = Lp + nb * block_length
+        e = s + block_length
+
+        # Masks/indices for the current block
+        block_mask_index = (x[:, s:e] == mask_id)  # (B, block_length)
+        num_transfer_tokens = get_num_transfer_tokens(block_mask_index, steps_per_block)  # (B, steps_per_block)
+
+        # 1) Warm KV-cache on the full prefix once per block
+        out_full = model(x, use_cache=True)
+        out_full = out_full[0] if isinstance(out_full, tuple) else out_full  # our LLaDA returns (output, attn_scores)
+        past_key_values = out_full.past_key_values
+        nfe += 1
+
+        # Build a replace_position tensor indicating the block range (static slice)
+        replace_position = torch.zeros_like(x, dtype=torch.bool)
+        replace_position[:, s:e] = True  # boolean mask (not a dynamic slice bound)
+
+        # Step 0: do an initial transfer on the full logits
+        global_mask_index = (x == mask_id)
+        # Do not touch beyond current block in this phase
+        global_mask_index[:, e:] = False
+
+        if factor is None:
+            quota0 = None if threshold is not None else num_transfer_tokens[:, 0]  # (B,)
+            x0, transfer_index = get_transfer_index(
+                out_full.logits, temperature, remasking, global_mask_index, x, quota0, threshold
+            )
+        else:
+            x0, transfer_index = get_transfer_index_dynamic(
+                out_full.logits, temperature, remasking, global_mask_index, x, None, factor
+            )
+
+        # In-place update via torch.where (no tensor-slice assignment with mask)
+        x = torch.where(transfer_index, x0, x)
+
+        # 2) Semi-autoregressive refinement, fixed number of steps (graph-friendly)
+        #    Each iteration runs on the current block with KV-cache and replace_position
+        for i in range(1, steps_per_block):
+            # Evaluate logits only for current block with cache
+            if (x[:, s:e] == mask_id).sum() == 0:
+                break
+            out_blk = model(
+                x[:, s:e], past_key_values=past_key_values, use_cache=True, replace_position=(s, e)
+            )  # (s, e): the model's slice write of the block, same math as the boolean mask without host syncs
+            logits_blk = (out_blk[0] if isinstance(out_blk, tuple) else out_blk).logits  # shape expected by get_transfer_index*
+
+            # Mask and quota for this step (all tensor ops)
+            mask_blk = (x[:, s:e] == mask_id)  # (B, block_length)
+
+            if factor is None:
+                quota_i = None if threshold is not None else num_transfer_tokens[:, i]  # (B,)
+                x0_blk, transfer_idx_blk = get_transfer_index(
+                    logits_blk, temperature, remasking, mask_blk, x[:, s:e], quota_i, threshold
+                )
+            else:
+                x0_blk, transfer_idx_blk = get_transfer_index_dynamic(
+                    logits_blk, temperature, remasking, mask_blk, x[:, s:e], None, factor
+                )
+
+            # Merge back into x[:, s:e] using torch.where (no masked slice assignment)
+            blk_old = x[:, s:e]
+            blk_new = torch.where(transfer_idx_blk, x0_blk, blk_old)
+            x = torch.cat([x[:, :s], blk_new, x[:, e:]], dim=1)  # static concatenation
+
+            nfe += 1
+
+    return x, nfe
+
+
+
+def get_transfer_index(
+    logits: torch.Tensor,
+    temperature: float,
+    remasking: str,
+    mask_index: torch.Tensor,   # (B, L) bool
+    x: torch.Tensor,            # (B, L) long
+    num_transfer_tokens,        # (B,) or (B,1) long tensor, or None when threshold is used
+    threshold: float = None,
+):
+    """
+    Returns:
+        x0: (B, L) long — proposed tokens
+        transfer_index: (B, L) bool — which positions to update this step
+    """
+    # 1) Sample proposal x0
+    # Gumbel-noise for exploration; if temperature==0, add_gumbel_noise should no-op
+    logits_with_noise = add_gumbel_noise(logits, temperature=temperature)
+    x0 = torch.argmax(logits_with_noise, dim=-1)  # (B, L), long
+
+    # 2) Confidence for chosen tokens (or random)
+    if remasking == "low_confidence":
+        # Use higher precision for softmax stability
+        p = F.softmax(logits.to(torch.float64), dim=-1)
+        x0_p = torch.gather(p, dim=-1, index=x0.unsqueeze(-1)).squeeze(-1)  # (B, L), float64
+    elif remasking == "random":
+        x0_p = torch.rand(x0.shape, device=x0.device, dtype=torch.float64)  # (B, L)
+    else:
+        raise NotImplementedError(remasking)
+
+    # Only modify masked spots; keep others as original x and set their confidence to -inf
+    x0 = torch.where(mask_index, x0, x)
+
+    neg_inf = torch.tensor(torch.finfo(x0_p.dtype).min, device=x0_p.device, dtype=x0_p.dtype)
+    confidence = torch.where(mask_index, x0_p, neg_inf)  # (B, L)
+
+    # 3) Pick positions to transfer (vectorized)
+    if threshold is not None:
+        # Transfer all masked positions whose confidence >= threshold
+        # (No top-k; purely threshold-based)
+        transfer_index = mask_index & (confidence >= threshold)
+
+        # at least one token is transferred "always unmask max c^i"
+        max_conf_indices = torch.argmax(confidence, dim=1, keepdim=True) # (B, 1)
+        force_mask = torch.zeros_like(transfer_index).scatter_(1, max_conf_indices, True)
+
+        # (Above Threshold) OR (Is Max Confidence)
+        transfer_index = transfer_index | force_mask
+
+        # Safety: do not unmask something that was not masked (consider fully unmasked rows)
+        transfer_index = transfer_index & mask_index
+
+        return x0, transfer_index
+
+    # Else: per-row top-k with varying k (num_transfer_tokens), fully batched
+    if num_transfer_tokens is None:
+        raise ValueError("num_transfer_tokens must be a tensor when threshold is None.")
+
+    # Ensure shape (B,) long
+    if num_transfer_tokens.dim() == 2 and num_transfer_tokens.size(1) == 1:
+        num_transfer_tokens = num_transfer_tokens.squeeze(1)
+    num_transfer_tokens = num_transfer_tokens.to(dtype=torch.long, device=confidence.device)
+    num_transfer_tokens = torch.clamp(num_transfer_tokens, min=0)
+
+    # Sort confidences descending (masked positions are valid; others are -inf)
+    # idx: (B, L) gives positions in original sequence sorted by confidence
+    values, idx = torch.sort(confidence, dim=1, descending=True)
+
+    B, L = confidence.shape
+    # Build a mask that is True for the first k[b] columns in each row (sorted order)
+    cols = torch.arange(L, device=confidence.device).unsqueeze(0).expand(B, L)   # (B, L)
+    k_expanded = num_transfer_tokens.unsqueeze(1).expand(B, L)                   # (B, L)
+    select_sorted = cols < k_expanded                                            # (B, L) bool
+
+    # Scatter the sorted True/False back to original column order
+    # Use integer scatter then cast to bool (scatter_ on bool can be finicky across versions)
+    transfer_int = torch.zeros(B, L, device=confidence.device, dtype=torch.int8) # (B, L)
+    transfer_int = transfer_int.scatter(1, idx, select_sorted.to(torch.int8))
+    transfer_index = transfer_int.bool() & mask_index  # ensure we never select unmasked
+
+    return x0, transfer_index
+
+def get_transfer_index_dynamic(logits, temperature, remasking, mask_index, x, num_transfer_tokens, factor=1):
+    logits_with_noise = add_gumbel_noise(logits, temperature=temperature)
+    x0 = torch.argmax(logits_with_noise, dim=-1) # b, l
+    if remasking == 'low_confidence':
+        p = F.softmax(logits.to(torch.float64), dim=-1)
+        x0_p = torch.squeeze(
+            torch.gather(p, dim=-1, index=torch.unsqueeze(x0, -1)), -1) # b, l
+    elif remasking == 'random':
+        x0_p = torch.rand((x0.shape[0], x0.shape[1]), device=x0.device)
+    else:
+        raise NotImplementedError(remasking)
+    
+    x0 = torch.where(mask_index, x0, x)
+    confidence = torch.where(mask_index, x0_p, -np.inf)
+
+    transfer_index = torch.zeros_like(x0, dtype=torch.bool, device=x0.device)
+    num_transfer_tokens = mask_index.sum(dim=1, keepdim=True)
+    
+    for j in range(confidence.shape[0]):
+        num_tokens = int(num_transfer_tokens[j].item())
+        if num_tokens == 0:
+            continue
+        
+        ns=list(range(1,num_transfer_tokens[j]+1))
+        es=[factor/(n+1) for n in ns]
+        threshs=[1-e for e in es]
+
+        # at least one token is transferred
+        threshs[0]=-1
+        sorted_confidence=torch.sort(confidence[j][mask_index[j]],dim=-1,descending=True)[0]
+        assert len(sorted_confidence)==len(threshs)
+        for top_i in range(len(threshs)):
+            if sorted_confidence[top_i]<threshs[top_i]:
+                break
+
+        if top_i == 0 or top_i == len(threshs)-1:
+            top_i+=1
+
+        _, select_index = torch.topk(confidence[j], k=top_i)
+        transfer_index[j, select_index] = True
+
+    return x0, transfer_index
+
+def get_transfer_index_dawn(logits, temperature, remasking, mask_index, x, num_transfer_tokens, avg_attn_scores, tau_sink=0.01, tau_edge=0.07, tau_induce=0.7, tau_low=0.7, num_block=0, block_length=32, prompt_length=None):
+    # attn sink removal
+    assert avg_attn_scores is not None, 'avg_attn_scores is None'
+    sink_mask = detect_attn_sinks_(avg_attn_scores, threshold=tau_sink)
+    key_sink_mask = sink_mask.unsqueeze(1)      # [B, 1, L]
+    avg_attn_scores = avg_attn_scores.masked_fill(key_sink_mask, 0.0)  # [B, L, L]
+
+    B, _, _ = avg_attn_scores.shape
+    avg_attn_scores.diagonal(dim1=1, dim2=2).zero_()
+
+    logits_with_noise = add_gumbel_noise(logits, temperature=temperature)
+    x0 = torch.argmax(logits_with_noise, dim=-1) # b, l
+
+    if remasking == 'low_confidence':
+        p = F.softmax(logits.to(torch.float64), dim=-1)
+        x0_p = torch.squeeze(
+            torch.gather(p, dim=-1, index=torch.unsqueeze(x0, -1)), -1) # b, l
+    elif remasking == 'random':
+        x0_p = torch.rand((x0.shape[0], x0.shape[1]), device=x0.device)
+    else:
+        raise NotImplementedError(remasking)
+
+    quantile_mask = avg_attn_scores >= tau_edge
+    quantile_mask = quantile_mask.transpose(1, 2)
+
+    # confidence aware 
+    confidence = torch.where(mask_index, x0_p, -np.inf)
+    transfer_index_conf = confidence >= 0.9
+
+    # select the dependent nodes
+    decoded_mask = (~mask_index & (x0_p >= 0.9)).unsqueeze(-1)
+    decoded_mask[:, prompt_length + (num_block + 1) * block_length:] = False
+    decoded_edge = quantile_mask & decoded_mask # [B, ?, N]
+    dependent_nodes = decoded_edge.any(dim=1) & mask_index
+    conf_d = torch.where(dependent_nodes, x0_p, -np.inf)
+    transfer_index_a = conf_d >= tau_induce
+
+    # select the conflicting nodes 
+    adj_ti_mask = quantile_mask & transfer_index_a.unsqueeze(-1) & transfer_index_conf.unsqueeze(-1)
+    adj_ti_mask = adj_ti_mask.any(dim=1)
+    node_mask = mask_index & (x0_p >= tau_low) & ~transfer_index_conf & ~transfer_index_a & ~adj_ti_mask
+    transfer_index_c = torch.zeros_like(x0, dtype=torch.bool, device=x0.device)
+
+    if node_mask.sum(dim=-1).min().item() != 0:
+        _node_mask = node_mask.unsqueeze(2) & node_mask.unsqueeze(1) # [B, N, N]
+        edge_mask = _node_mask & quantile_mask # [B, N, N]
+
+        confidence = torch.where(node_mask, x0_p, -np.inf)
+        for j in range(B):
+            select_index = select_parallel_tokens_conflict_mis(edge_mask[j], node_mask[j], confidence[j])
+            transfer_index_c[j, select_index] = True
+
+    transfer_index = transfer_index_a | transfer_index_conf | transfer_index_c
+    
+    if transfer_index.sum(dim=-1).min().item() == 0:
+        confidence = torch.where(mask_index, x0_p, -np.inf)
+        
+        max_conf_indices = torch.argmax(confidence, dim=1, keepdim=True) # (B, 1)
+        force_mask = torch.zeros_like(transfer_index).scatter_(1, max_conf_indices, True)
+        transfer_index = transfer_index | force_mask
+        
+    return x0, transfer_index
+
+@torch.no_grad()
+def generate_klass(
+    model, input_ids_original, gen_length, steps, block_length, temperature=0., mask_id=126336,
+    conf_threshold=0.6, kl_threshold=0.015, kl_history_length=2, 
+    alg="klass",
+    unmask_strategy="all"
+):
+    """
+    reference: https://github.com/shkim0116/KLASS
+    used for baseline method in the paper, remove analysis of the model's output
+
+    Decoding strategy: Unmask tokens that are both high-confidence and have stable (low KL-divergence) softmax distributions over H steps.
+    Implements alg options: default, random, topk_margin, entropy.
+    """
+    mask_id = 126336
+    x = torch.full((1, input_ids_original.shape[1] + gen_length), mask_id, dtype=torch.long).to(model.device)
+    x[:, :input_ids_original.shape[1]] = input_ids_original.clone()
+
+    assert gen_length % block_length == 0
+    num_blocks = gen_length // block_length
+    assert steps % num_blocks == 0
+    steps_per_block = steps // num_blocks
+
+    used_steps = 0
+
+    # History buffers
+    V = model.lm_head.out_features if hasattr(model, "lm_head") else model.config.vocab_size
+    kl_history = torch.zeros((1, x.shape[1], kl_history_length), dtype=torch.float64, device=x.device)
+    p_prev = torch.zeros((1, x.shape[1], V), dtype=torch.float64, device=x.device)
+
+    all_step_outputs = []
+
+    for num_block in range(num_blocks):
+        block_start = input_ids_original.shape[1] + num_block * block_length
+        block_end = input_ids_original.shape[1] + (num_block + 1) * block_length
+        block_mask_index = (x[:, block_start:block_end] == mask_id)
+        num_transfer_tokens = get_num_transfer_tokens(block_mask_index, steps_per_block)
+
+        for step in range(steps_per_block):
+            mask_index = (x == mask_id)
+            # --- Restrict to current block ---
+            block_mask = torch.zeros_like(mask_index)
+            block_mask[:, block_start:block_end] = True
+            mask_index = mask_index & block_mask
+
+            # --- Break if all tokens in current block are unmasked ---
+            if not mask_index[:, block_start:block_end].any():
+                break
+
+            output, _ = model(x)
+            logits = output.logits
+            if temperature > 0:
+                logits = add_gumbel_noise(logits, temperature)
+            p_curr = F.softmax(logits.to(torch.float64), dim=-1)
+            x0 = torch.argmax(p_curr, dim=-1)
+
+            # --- Compute confidence according to alg ---
+            if alg == "random":
+                curr_conf = torch.rand((x0.shape[0], x0.shape[1]), device=x0.device)
+            elif alg == "topk_margin":
+                sorted_probs, _ = torch.sort(p_curr, dim=-1, descending=True)
+                top1 = sorted_probs[..., 0]
+                top2 = sorted_probs[..., 1]
+                curr_conf = top1 - top2
+            elif alg == "entropy":
+                eps_ent = 1e-10
+                log_p = torch.log(p_curr + eps_ent)
+                curr_conf = -torch.sum(p_curr * log_p, dim=-1)  # negative entropy (lower entropy = higher confidence)
+            else:  # default (top confidence)
+                curr_conf = torch.squeeze(torch.gather(p_curr, dim=-1, index=torch.unsqueeze(x0, -1)), -1)
+
+            # KL divergence between current and previous step
+            eps = 1e-12
+            kl_current_prev = (p_curr * (torch.log(p_curr + eps)
+                            - torch.log(p_prev + eps))
+                 ).sum(dim=-1)
+            # Shift kl_history and insert new KL at the end
+            kl_history = torch.roll(kl_history, shifts=-1, dims=-1)
+            kl_history[..., -1] = kl_current_prev
+
+            p_prev = p_curr.clone()
+
+            if alg == "klass":
+                # --- KL threshold logic ---
+                if step >= kl_history_length - 1:
+                    stable_mask = torch.all(kl_history < kl_threshold, dim=-1)
+                else:
+                    stable_mask = torch.zeros_like(curr_conf, dtype=torch.bool)
+                # --- Confidence threshold logic ---
+                conf_mask = curr_conf > conf_threshold
+
+                ready_mask = stable_mask & conf_mask & mask_index
+            else:
+                ready_mask = torch.zeros_like(curr_conf, dtype=torch.bool)
+
+            # Select top-k tokens to unmask
+            transfer_index = torch.zeros_like(x0, dtype=torch.bool, device=x.device)
+            decoded_token_info = [] 
+
+            for j in range(ready_mask.shape[0]):
+                ready_indices = torch.where(ready_mask[j])[0]
+                if len(ready_indices) > 0:
+                    if len(ready_indices) > 1 and unmask_strategy != "all":
+                        if unmask_strategy == "max_conf":
+                            # Pick the one with highest confidence
+                            conf_vals = curr_conf[j, ready_indices]
+                            max_idx = torch.argmax(conf_vals)
+                            selected_indices = ready_indices[max_idx:max_idx+1]
+                        elif unmask_strategy == "min_kl":
+                            # Pick the one with lowest KL divergence
+                            kl_vals = kl_current_prev[j, ready_indices]
+                            min_idx = torch.argmin(kl_vals)
+                            selected_indices = ready_indices[min_idx:min_idx+1]
+                        elif unmask_strategy == "random":
+                            selected_indices = ready_indices[torch.randint(0, len(ready_indices), (1,))]
+                        else:
+                            selected_indices = ready_indices
+                    else:
+                        selected_indices = ready_indices
+                    transfer_index[j, selected_indices] = True
+                # If no tokens meet both criteria, select top-k by confidence
+                else:
+                    curr_conf[:, input_ids_original.shape[1] + (num_block + 1) * block_length:] = -np.inf
+                    confidence = torch.where(mask_index, curr_conf, -np.inf)
+                    transfer_index = torch.zeros_like(x0, dtype=torch.bool, device=x0.device)
+                    _, selected_indices = torch.topk(confidence[j], k=num_transfer_tokens[j, step].item())
+                    transfer_index[j, selected_indices] = True
+
+            x[transfer_index] = x0[transfer_index]
+            used_steps += 1
+
+    return x, used_steps
+
+def get_transfer_index_localleap(logits, temperature, remasking, mask_index, x, num_transfer_tokens, 
+    threshold=0.9, relaxed_threshold=0.75, radius=4):
+    '''
+    reference: https://github.com/shkim0116/KLASS
+    used for local leap method in the paper
+    '''
+    logits_with_noise = add_gumbel_noise(logits, temperature=temperature)
+    x0 = torch.argmax(logits_with_noise, dim=-1) # b, l
+
+    if remasking == 'low_confidence':
+        p = F.softmax(logits.to(torch.float64), dim=-1)
+        x0_p = torch.squeeze(
+            torch.gather(p, dim=-1, index=torch.unsqueeze(x0, -1)), -1) # b, l
+    elif remasking == 'random':
+        x0_p = torch.rand((x0.shape[0], x0.shape[1]), device=x0.device)
+    else:
+        raise NotImplementedError(remasking)
+    
+    x0 = torch.where(mask_index, x0, x)
+    confidence = torch.where(mask_index, x0_p, -np.inf)
+
+    transfer_index = torch.zeros_like(x0, dtype=torch.bool, device=x0.device)
+    if threshold is not None:
+        num_transfer_tokens = mask_index.sum(dim=1, keepdim=True)
+    for j in range(confidence.shape[0]):
+        _, select_index = torch.topk(confidence[j], k=num_transfer_tokens[j])
+        transfer_index[j, select_index] = True
+        if threshold is not None:
+            mask_positions = torch.where(mask_index[j])[0]
+
+            neighbor_positions = set()
+            use_localleap = False
+
+            if relaxed_threshold is not None:
+                anchor_mask = confidence[j][mask_positions] >= threshold
+                anchor_count = anchor_mask.sum().item()
+
+                if anchor_count >= 1:
+                    use_localleap = True
+                    anchor_positions = mask_positions[anchor_mask]
+                    for pos in anchor_positions:
+                        pos_val = pos.item()
+                        # Add all positions of the anchor's neighbors.
+                        for neignbor_pos in range(max(0, pos_val - radius), min(confidence.shape[1], pos_val + radius + 1)):
+                            neighbor_positions.add(neignbor_pos)
+            
+            for k in range(1, num_transfer_tokens[j]):
+                pos = select_index[k].item()
+                if use_localleap:
+                    effective_threshold = relaxed_threshold if pos in neighbor_positions else threshold
+                else:
+                    effective_threshold = threshold
+                
+                if confidence[j, select_index[k]] < effective_threshold:
+                    transfer_index[j, select_index[k]] = False
+    
+    return x0, transfer_index
+
+def main():
+    device = 'cuda'
+
+    # model = LLaDAModelLM.from_pretrained('GSAI-ML/LLaDA-8B-Instruct', trust_remote_code=True, torch_dtype=torch.bfloat16).to(device).eval()
+    # tokenizer = AutoTokenizer.from_pretrained('GSAI-ML/LLaDA-8B-Instruct', trust_remote_code=True)
+
+    model = LLaDAModelLM.from_pretrained('GSAI-ML/LLaDA-8B-Instruct', trust_remote_code=True, torch_dtype=torch.bfloat16).to(device).eval()
+    tokenizer = AutoTokenizer.from_pretrained('GSAI-ML/LLaDA-8B-Instruct', trust_remote_code=True)
+    prompt = "Lily can run 12 kilometers per hour for 4 hours. After that, she runs 6 kilometers per hour. How many kilometers can she run in 8 hours?"
+
+    # Add special tokens for the Instruct model. The Base model does not require the following two lines.
+    m = [{"role": "user", "content": prompt}, ]
+    prompt = tokenizer.apply_chat_template(m, add_generation_prompt=True, tokenize=False)
+
+    input_ids = tokenizer(prompt)['input_ids']
+    input_ids = torch.tensor(input_ids).to(device).unsqueeze(0)
+    with torch.inference_mode():
+        nvtx.range_push("INFER")
+
+        out = generate_with_dual_cache(model, input_ids, steps=128, gen_length=128, block_length=32, temperature=0., remasking='low_confidence')
+    
+        torch.cuda.synchronize()
+        nvtx.range_pop()
+    print(tokenizer.batch_decode(out[0][:, input_ids.shape[1]:], skip_special_tokens=True)[0])
+
+if __name__ == '__main__':
+    main()

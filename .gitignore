@@ -1,0 +1,6 @@
+# outputs of your own runs
+results/
+# caches
+__pycache__/
+*.pyc
+.metrics/
